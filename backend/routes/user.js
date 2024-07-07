@@ -1,94 +1,53 @@
-const router = experss.Router();
+const mongoose = require('mongoose');
 
-const express = require('express');
-const zod = require('zod');
-const {User} = require("../db");
-const jwt= require("jsonwebtoken");
-const {JWT_SECRET} = require("../config");
+mongoose.connect("mongodb://localhost:27017/paytm")
 
-
-//signup
-const signupBody= zod.object({
-    username:    zod.string().email(),
-    firstname:   zod.string(),
-    lastname:    zod.string(),
-    password:    zod.string()
-
-})
-
-router.post("/signup",async(req,res)=>{
-    const {success} = signupBody.safeParse(req.body)
-    if(!success){
-        return res.status(404).json({
-            message: "email invalid"
-        })
+// Create a Schema for Users
+const userSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true,
+        minLength: 3,
+        maxLength: 30
+    },
+    password: {
+        type: String,
+        required: true,
+        minLength: 6
+    },
+    firstName: {
+        type: String,
+        required: true,
+        trim: true,
+        maxLength: 50
+    },
+    lastName: {
+        type: String,
+        required: true,
+        trim: true,
+        maxLength: 50
     }
+});
 
-    const existingUser =  await User.findOne({
-        username: req.body.usename
-    })
-    if(existingUser){
-        return res.status(411).json({
-            message: "email already in usee"
-        })
+const accountSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId, // Reference to User model
+        ref: 'User',
+        required: true
+    },
+    balance: {
+        type: Number,
+        required: true
     }
+});
 
-    const user = await User.create({
-        username: req.body.usename,
-        password: req.body.password,
-        firstname: req.body.firstname,
-        lastname: req.body.lastname,
-    })
-    const userId= user._id;
+const Account = mongoose.model('Account', accountSchema);
+const User = mongoose.model('User', userSchema);
 
-    const token =jwt.sign({
-        userId
-    },JWT_SECRET);
-
-    res.json({
-        message: "User created successfully",
-        token: token 
-    })
-})
-
-//signin 
-
-const signinBody = zod.object({
-    username: zod.string().email(),
-    password : zod.string()
-})
-
-router.post("/signin", async(req,res)=>{
-    const {success} = signinBody.safeParse(req.body)
-    if(!success){
-        return res.status(411).json({
-            message: "invalid inputs"
-        })
-    }
-    const user = await User.findOne({
-        username: req.body.username,
-        password: req.body.password
-    });
-
-    if(user){
-        const token = jwt.sign({
-            userId: user._id
-        },JWT_SECRET);
-
-        res.json({
-            token : token
-
-        })
-        return ;
-
-    }
-    res.status(411).json({
-        message: "Error while logging in"
-    })
-
-
-})
-
-
-
-module.exports = router;
+module.exports = {
+	User,
+    Account
+};
