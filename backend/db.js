@@ -1,4 +1,3 @@
-// backend/db.js
 const mongoose = require('mongoose');
 
 mongoose.connect("mongodb+srv://preetham31:Preethampipi1331@cluster0.mqjjbo9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
